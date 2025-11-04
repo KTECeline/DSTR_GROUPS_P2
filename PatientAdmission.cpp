@@ -209,9 +209,9 @@ void PatientAdmission::loadFromFile() {
     // Detailed: Read CSV, parse/enqueue, track max ID.
     // Why on construct? Restores state for "continuous service".
     // Handles malformed lines gracefully (skip).
-    ifstream file("patients.txt");
+    ifstream file("data/patients.txt");
     if (!file.is_open()) {
-        cout << "INFO: patients.txt not found. Starting fresh queue." << endl;
+        cout << "INFO: daata/patients.txt not found. Starting fresh queue." << endl;
         return;
     }
     
@@ -249,7 +249,7 @@ void PatientAdmission::loadFromFile() {
 void PatientAdmission::saveToFile() const {
     // Detailed: Overwrite CSV from front; O(n) traversal.
     // Why after changes? Incremental backup for reliability.
-    ofstream file("patients.txt");
+    ofstream file("data/patients.txt");
     if (!file.is_open()) {
         cout << "ERROR: Cannot save to patients.txt!" << endl;
         return;
