@@ -6,3 +6,26 @@ git pull
 git add . 
 git commit -m "cmment"
 git push
+
+HospitalManagementSystem/  (Root folder—name it something descriptive like this)
+├── main.cpp                  (Entry point: Menu system that initializes all roles and routes user choices)
+├── PatientAdmission.hpp      (Header for Role 1: Class declaration, e.g., PatientQueue class)
+├── PatientAdmission.cpp      (Implementation for Role 1: Your 3 functionalities + data structure logic)
+├── MedicalSupply.hpp         (Header for Role 2: Class declaration, e.g., SupplyStack class)
+├── MedicalSupply.cpp         (Implementation for Role 2: Your 3 functionalities + data structure logic)
+├── EmergencyDept.hpp         (Header for Role 3: Class declaration, e.g., EmergencyPriorityQueue class)
+├── EmergencyDept.cpp         (Implementation for Role 3: Your 3 functionalities + data structure logic)
+├── AmbulanceDispatch.hpp     (Header for Role 4: Class declaration, e.g., AmbulanceCircularQueue class)
+├── AmbulanceDispatch.cpp     (Implementation for Role 4: Your 3 functionalities + data structure logic)
+└── data/                     (Optional subfolder for any persistent files—e.g., if you save/load patient data)
+    ├── patients.csv          (Example: For Role 1 to log patients if needed)
+    ├── supplies.txt          (Example: For Role 2 to track batches)
+    ├── emergencies.csv       (Example: For Role 3)
+    └── ambulances.txt        (Example: For Role 4)
+
+
+Role,Suggested DS,Why? (Justify in Comments),Implementation Tip
+1: Patient Admission Clerk,Queue (FIFO),"Admit adds to end, discharge removes from front (earliest patient first). View shows queue order.","Array-based queue: Fixed size (e.g., 100 patients). Struct for Patient {int id; string name, condition;}."
+2: Medical Supply Manager,Stack (LIFO),"""Use Last Added"" = pop top (most recent supply first, like shelf restocking). Add = push. View = traverse stack.",Linked list-based stack for dynamic sizes (batches vary). Struct for Supply {string type; int qty; string batch;}.
+3: Emergency Dept Officer,Priority Queue,Log adds with priority level; process highest first. View in priority order.,"Array-based with heap (or simple sorted array for small size). Higher priority = smaller number (e.g., 1=critical). Struct for Emergency {string name, type; int priority;}."
+4: Ambulance Dispatcher,Circular Queue,Register adds to queue; rotate shifts in cycle (fair rotation without data loss). Display shows current order.,Array-based circular queue (reuse slots for continuous duty). Struct for Ambulance {string id; bool onDuty;}.
