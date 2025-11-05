@@ -9,6 +9,7 @@ class MedicalSupply;
 class Emergency;
 class Ambulance;
 class PatientAdmission;
+
 int main() {
     PatientAdmission pa;
     MedicalSupply* ms = nullptr;   // create later when needed
@@ -21,7 +22,7 @@ int main() {
         cout << "\n==============================================\n";
         cout << "      HOSPITAL PATIENT CARE MANAGEMENT SYSTEM\n";
         cout << "==============================================\n";
-        cout << "1. Patient Admission (Role 1)\n";
+        cout << "1. Patient Admission (Role 1: Array + FIFO Queue)\n";
         cout << "2. Medical Supply Management (Role 2)\n";
         cout << "3. Emergency Department (Role 3)\n";
         cout << "4. Ambulance Dispatch (Role 4)\n";
