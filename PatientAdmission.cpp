@@ -1,285 +1,167 @@
 // PatientAdmission.cpp
-// Implementation file for Patient Admission Clerk role.
-// All methods implement detailed queue operations with validation, error handling, and feedback.
-// Techniques:
-// - Array-based circular queue: O(1) enqueue/dequeue (modulo for wrap); no shifts needed.
-// - Linear? No—circular for efficiency in continuous ops (e.g., high turnover).
-// - Auto-ID: nextId++ on admit; loaded from file max+1 for persistence.
-// - Input validation: Trim strings, check non-empty, handle cin fails (robust menu-driven).
-// - Persistence: <fstream>/<sstream> for CSV (core C++); save on admit/discharge/dtor.
-// - Efficiency: O(1) core ops, O(n) for view/search/save (fine for n=100; hospital-scale).
-// - Error handling: User messages (e.g., full queue) over crashes—aligns with "user-friendly".
-// - Comments: Inline justifications for DS/algos (for teacher's review; no separate doc).
-// - Creativity: Added searchById (O(n) scan—simple, useful for "efficient management"); timestamp comment ready (extendable).
-// Compile: g++ PatientAdmission.cpp main.cpp -o hospital_patient (use provided main below).
+// Implementation for Role 1: Manual FIFO queue via array.
+// Re-Why ARRAY + FIFO QUEUE?
+// - FIFO Behavior: Enqueue (rear++) adds new patients to end; dequeue (front++) removes oldest—preserves arrival order.
+//   Directly solves "Admit Patient" (add), "Discharge Patient" (remove earliest), "View" (show in order).
+// - Array Efficiency: Contiguous storage = fast access (no pointer chasing like linked lists); O(1) push/pop.
+//   Bounded size prevents memory leaks; linear scan for view/search is O(n) but trivial (n<=100, hospital-scale).
+// - Relevance to System: Supports "patient queues" challenge without priorities (Role 3 uses priority queue for urgency).
+//   Performance: Constant time core ops = handles peak flows; aligns with "efficient management" in outbreaks.
+// - Vs. Alternatives: Not Stack (LIFO—would discharge newest first, unfair); not Circular (no rotation needed here, Role 4).
+//   Array > Linked List: Simpler (no new/delete), faster for fixed max—focus on core DS, not mem mgmt.
+// Validation/Edges: Input checks, error msgs—boosts code quality (readability, correctness).
+// Uppercase: Standardizes output (e.g., "john" → "JOHN") for clean reports.
 
 #include "PatientAdmission.hpp"
-#include <iostream>    // For std::cout/std::cin (core I/O).
-#include <iomanip>     // For std::setw (neat table display).
-#include <fstream>     // For file I/O (core persistence).
-#include <sstream>     // For CSV parsing (core string ops).
-#include <algorithm>   // For std::remove_if (trim strings—core, no STL DS).
-#include <cctype>      // For isspace (trim helper).
+#include <iostream>
+#include <iomanip>
+#include <cctype>  // For toupper (uppercase transform).
 using namespace std;
 
-// Private helper: Trim whitespace from string (innovation: clean data).
-string trim(const string& str) {
-    size_t first = str.find_first_not_of(" \t");
-    if (first == string::npos) return "";
-    size_t last = str.find_last_not_of(" \t");
-    return str.substr(first, (last - first + 1));
+// Helper: Uppercase a string (innovation: Standardizes names for clean records/search).
+void toUppercase(string& str) {
+    for (char& c : str) {
+        c = toupper(static_cast<unsigned char>(c));  // Safe toupper.
+    }
+    // Why? Uniform display (e.g., "John" → "JOHN"); O(m) time, m=length (negligible).
 }
 
-// Constructor:
 PatientAdmission::PatientAdmission() : front(0), rear(0), currentSize(0), nextId(1) {
-    // Initialize: Empty queue, auto-ID=1.
-    // Why reset? Clean simulation start; load overrides.
-    loadFromFile();  // Restore state + set nextId from file.
+    // Reset for clean start. Why? Simulates new shift.
 }
 
-// Destructor: Final save for unsaved changes.
-PatientAdmission::~PatientAdmission() {
-    saveToFile();  // Ensures persistence on exit (good practice).
-}
-
-// Admit Patient: Detailed impl with auto-ID, validation, persistence.
-bool PatientAdmission::admitPatient(const string& providedName, const string& providedCondition) {
-    // Enqueue to rear if not full; auto-ID unless overridden (default empty= prompt in menu).
+bool PatientAdmission::admitPatient() {
+    // Enqueue: Prompt, auto-ID, uppercase name, add if not full.
     if (isFull()) {
-        cout << "ERROR: Queue full! Cannot admit. Max " << MAX_PATIENTS << " patients. Consider discharging first." << endl;
-        return false;  // Graceful: Simulates hospital redirect.
-    }
-    
-    string name = providedName.empty() ? "" : trim(providedName);  // Trim if provided.
-    string condition = providedCondition.empty() ? "" : trim(providedCondition);
-    
-    // If not provided, prompt (menu use):
-    if (name.empty() || condition.empty()) {
-        cout << "Enter Patient Name: ";
-        getline(cin, name);
-        name = trim(name);
-        cout << "Enter Condition Type: ";
-        getline(cin, condition);
-        condition = trim(condition);
-    }
-    
-    if (name.empty() || condition.empty()) {
-        cout << "ERROR: Invalid input—name and condition must not be empty." << endl;
-        return false;  // Validation: No garbage data.
-    }
-    
-    // Auto-ID assign:
-    int id = nextId++;  // Increment post-assign for uniqueness.
-    // Why auto? Prevents manual errors/duplicates; innovation for efficiency (O(1) unique gen).
-    
-    // Enqueue: Circular add.
-    queue[rear] = {id, name, condition};
-    rear = (rear + 1) % MAX_PATIENTS;
-    currentSize++;
-    
-    cout << "SUCCESS: Patient " << name << " (Auto-ID: " << id << ", Condition: " << condition 
-         << ") admitted to queue (position: " << currentSize << ")." << endl;
-    // Could add timestamp: time_t now = time(0); but keep core/simple.
-    
-    saveToFile();  // Persist immediately.
-    return true;
-}
-
-// Discharge Patient: Detailed impl with display, persistence.
-bool PatientAdmission::dischargePatient() {
-    // Dequeue from front if not empty; display details.
-    if (isEmpty()) {
-        cout << "ERROR: No patients to discharge. Queue empty." << endl;
+        cout << "Queue full! Max " << MAX_PATIENTS << " patients." << endl;
         return false;
     }
-    
-    Patient discharged = queue[front];  // Peek/copy front.
-    cout << "DISCHARGED: Patient " << discharged.name 
-         << " (ID: " << discharged.id << ", Condition: " << discharged.condition 
-         << ") treated and removed (was first in queue)." << endl;
-    
-    // Dequeue: Circular shift.
-    front = (front + 1) % MAX_PATIENTS;
-    currentSize--;
-    
-    cout << "Queue updated: " << currentSize << " patients remaining." << endl;
-    saveToFile();  // Persist.
+    int id = nextId++;  // Auto-increment.
+    string name, condition;
+    cout << "Patient Name: ";
+    cin >> ws;  // Clear buffer.
+    getline(cin, name);
+    cout << "Condition: ";
+    getline(cin, condition);
+    if (name.empty() || condition.empty()) {
+        cout << "Invalid input." << endl;
+        nextId--;  // Undo ID.
+        return false;
+    }
+    toUppercase(name);  // Transform to caps.
+    queue[rear++] = {id, name, condition};
+    currentSize++;
+    cout << "Admitted: " << name << " (ID " << id << ")." << endl;
     return true;
 }
 
-// View Patient Queue: Detailed table display.
-void PatientAdmission::viewPatientQueue() const {
-    // Traverse circular queue from front; O(n) linear scan—simple/efficient for display.
-    // Why table? Readability (setw alignment); simulates waiting list report.
+bool PatientAdmission::dischargePatient() {
+    // Dequeue: Remove/display front if not empty.
     if (isEmpty()) {
-        cout << "INFO: No patients waiting. Queue empty." << endl;
+        cout << "Queue empty." << endl;
+        return false;
+    }
+    Patient p = queue[front++];
+    cout << "Discharged: " << p.name << " (ID " << p.id << ", " << p.condition << ")." << endl;
+    currentSize--;
+    return true;
+}
+
+void PatientAdmission::viewPatientQueue() const {
+    // Display: Linear from front (O(n) scan—simple for report). Names already caps.
+    if (isEmpty()) {
+        cout << "Queue empty." << endl;
         return;
     }
-    
-    cout << "\n=== Patient Waiting Queue (FIFO Order: Earliest First) ===" << endl;
-    cout << left << setw(6) << "ID" << setw(25) << "Name" << setw(20) << "Condition" << "Position" << endl;
-    cout << string(60, '=') << endl;
-    
-    int index = front;
-    for (int i = 1; i <= currentSize; ++i) {  // Position 1=front.
-        const Patient& p = queue[index];
-        cout << left << setw(6) << p.id << setw(25) << p.name << setw(20) << p.condition << i << endl;
-        index = (index + 1) % MAX_PATIENTS;
+    cout << "\n[ Patient Queue (Earliest First) ]:" << endl;
+    cout << left << setw(5) << "ID" << setw(15) << "Name" << "Condition" << endl;
+    cout << "-----------------------" << string(15, '-') << endl;
+    for (int i = front; i < front + currentSize; ++i) {  // Linear access.
+        int idx = i < MAX_PATIENTS ? i : i % MAX_PATIENTS;  // Safe if overflow.
+        const Patient& p = queue[idx];
+        cout << setw(5) << p.id << setw(15) << p.name << p.condition << endl;
     }
-    cout << string(60, '=') << endl;
-    cout << "Total waiting: " << currentSize << "/" << MAX_PATIENTS << " | Next ID: " << nextId << endl;
+    cout << "Total: " << currentSize << "/" << MAX_PATIENTS << endl;
 }
 
-// Bonus Search: O(n) scan for ID (creativity: Quick lookup in queue).
 bool PatientAdmission::searchPatientById(int searchId) const {
-    if (searchId <= 0) {
-        cout << "ERROR: Invalid ID." << endl;
+    // Bonus: Scan queue for ID (O(n); from front for order relevance).
+    // Why? Efficient check without full view (e.g., "Is patient X waiting?").
+    if (searchId < 1) {
+        cout << "Invalid ID." << endl;
         return false;
     }
-    int index = front;
-    for (int i = 0; i < currentSize; ++i) {
-        if (queue[index].id == searchId) {
-            const Patient& p = queue[index];
-            cout << "FOUND: Patient " << p.name << " (ID: " << p.id << ", Condition: " << p.condition 
-                 << ") at position " << (i + 1) << "." << endl;
+    for (int i = front; i < front + currentSize; ++i) {
+        int idx = i < MAX_PATIENTS ? i : i % MAX_PATIENTS;
+        if (queue[idx].id == searchId) {
+            const Patient& p = queue[idx];
+            cout << "Found: " << p.name << " (ID " << p.id << ", " << p.condition << ") at position " << (i - front + 1) << "." << endl;
             return true;
         }
-        index = (index + 1) % MAX_PATIENTS;
     }
-    cout << "NOT FOUND: No patient with ID " << searchId << "." << endl;
+    cout << "ID " << searchId << " not in queue." << endl;
     return false;
 }
 
-// Menu: Detailed loop with validation (user-friendly).
 void PatientAdmission::displayMenu() {
-    // Sub-menu: Integrates standalone; loops until 0.
-    // Why do-while? Continuous use; cin validation prevents hangs.
     int choice;
-    cout << "\n=== Patient Admission Clerk Menu (Role 1) ===" << endl;
+
     do {
-        cout << "1. Admit New Patient (Auto-ID)" << endl;
-        cout << "2. Discharge Earliest Patient" << endl;
-        cout << "3. View Full Queue" << endl;
-        cout << "4. Search Patient by ID" << endl; 
-        cout << "0. Exit to System" << endl;
-        cout << "Choice: ";
-        
-        if (!(cin >> choice)) {  // Validate int input.
+        cout << "\n====== Patient Admission Menu ======\n"
+             << "1. Admit Patient\n"
+             << "2. Discharge Patient\n"
+             << "3. View Patient Queue\n"
+             << "4. Search Patient by ID\n"
+             << "0. Exit Program\n"
+             << "-----------------------------------\n"
+             << "Enter your choice: ";
+
+        cin >> choice;
+
+        // Handle input error (non-integer)
+        if (cin.fail()) {
             cin.clear();
-            cin.ignore(10000, '\n');
-            cout << "ERROR: Enter a number (0-4)!" << endl;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             choice = -1;
-            continue;
         }
-        cin.ignore(10000, '\n');  // Clear buffer for getline.
-        
+
         switch (choice) {
             case 1:
-                admitPatient();  // Prompts inside.
+                cout << "\n"  << "[ Admitting Patient ]"  << endl;  
+                admitPatient();
                 break;
+
             case 2:
+                cout << "\n"  << "[ Discharging Patient ]"  << endl;  
                 dischargePatient();
                 break;
+
             case 3:
+                cout << "\n"  << "[ Viewing Patient Queue ]"  << endl;
                 viewPatientQueue();
                 break;
+
             case 4: {
                 int id;
-                cout << "Enter ID to search: ";
+                cout << "Enter Patient ID to search: ";
                 cin >> id;
-                searchPatientById(id);
+                if (!cin.fail()) {
+                    searchPatientById(id);
+                } else {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid ID input.\n";
+                }
                 break;
             }
+
             case 0:
-                cout << "Exiting Patient Menu. Goodbye!" << endl;
+                cout << "Exiting program...\n";
                 break;
+
             default:
-                cout << "ERROR: Invalid choice (0-4 only)!" << endl;
+                cout << "Invalid choice. Please try again.\n";
         }
-        
-        if (choice != 0) {
-            cout << "\nPress Enter to continue...";
-            cin.get();  // Pause for readability (demo-friendly).
-        }
+
     } while (choice != 0);
-}
-
-// Persistence: Load from patients.txt.
-void PatientAdmission::loadFromFile() {
-    // Detailed: Read CSV, parse/enqueue, track max ID.
-    // Why on construct? Restores state for "continuous service".
-    // Handles malformed lines gracefully (skip).
-    ifstream file("data/patients.txt");
-    if (!file.is_open()) {
-        cout << "INFO: daata/patients.txt not found. Starting fresh queue." << endl;
-        return;
-    }
-    
-    string line;
-    int loaded = 0;
-    int maxLoadedId = 0;
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-        stringstream ss(line);
-        string token;
-        int id;
-        string name, condition;
-        
-        if (!(ss >> id)) continue;  // Parse ID.
-        getline(ss, token, ',');    // Skip comma.
-        if (!getline(ss, name, ',')) continue;  // Name.
-        getline(ss, condition);     // Condition (rest).
-        
-        name = trim(name);
-        condition = trim(condition);
-        if (name.empty() || condition.empty()) continue;
-        
-        // Enqueue if space (though load assumes prior empty).
-        if (!isFull() && admitPatient(name, condition)) {  // Reuse admit (but skip save to avoid loop).
-            loaded++;
-            maxLoadedId = max(maxLoadedId, id);
-        }
-    }
-    file.close();
-    nextId = max(1, maxLoadedId + 1);  // Resume auto-ID.
-    cout << "LOADED: " << loaded << " patients. Next ID: " << nextId << endl;
-}
-
-// Persistence: Save to patients.txt.
-void PatientAdmission::saveToFile() const {
-    // Detailed: Overwrite CSV from front; O(n) traversal.
-    // Why after changes? Incremental backup for reliability.
-    ofstream file("data/patients.txt");
-    if (!file.is_open()) {
-        cout << "ERROR: Cannot save to patients.txt!" << endl;
-        return;
-    }
-    if (isEmpty()) {
-        // Empty file.
-    } else {
-        int index = front;
-        for (int i = 0; i < currentSize; ++i) {
-            const Patient& p = queue[index];
-            // Basic CSV: Assume no commas in fields (real: quote if needed).
-            file << p.id << "," << p.name << "," << p.condition << "\n";
-            index = (index + 1) % MAX_PATIENTS;
-        }
-    }
-    file.close();
-    // cout << "SAVED: " << currentSize << " patients to file." << endl;  // Optional verbose.
-}
-
-// Helper: For initial nextId if no load (but integrated in load).
-int PatientAdmission::findMaxIdFromFile() const {
-    // Not used directly; load handles.
-    ifstream file("patients.txt");
-    int maxId = 0;
-    string line;
-    while (getline(file, line)) {
-        stringstream ss(line);
-        int id;
-        if (ss >> id) maxId = max(maxId, id);
-    }
-    file.close();
-    return maxId;
 }

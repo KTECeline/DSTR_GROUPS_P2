@@ -1,70 +1,61 @@
 // PatientAdmission.hpp
-// Header file for Patient Admission Clerk role (Role 1).
-// This defines the Patient struct and the PatientAdmission class,
-// which encapsulates a queue-based system for managing patient admissions.
-// Why Queue? Patient admission follows FIFO (First-In-First-Out) principle:
-// Patients are admitted in order and discharged (treated) in the same order to ensure fairness.
-// No jumping the line for routine cases—emergencies handled separately (Role 3).
-// Implementation: Array-based circular queue for efficiency.
-// Arrays provide O(1) access time for enqueue/dequeue, suitable for bounded hospital queue size.
-// Circular design prevents space wastage (reuse slots after dequeue); modulo ops handle wrap-around.
-// Assumed max capacity: 100 patients (scalable; fixed size avoids dynamic allocation overhead in core C++).
-// Auto-ID: Internal counter for unique IDs (innovation: prevents duplicates, auto-increments on admit).
-// Persistence: Load/save to patients.txt (CSV format) for data durability across sessions.
-// Why persistence? Simulates real hospital system continuity (e.g., survives restarts); O(n) load/save acceptable for n=100.
-// No STL containers used (e.g., no <queue> or <vector>); manual implementation adheres to assignment rules.
-// File format: "ID,Name,Condition" per line (names/conditions without commas; trimmed for cleanliness).
+// Header for Role 1: Patient Admission Clerk.
+// Data Structure Choice: ARRAY + FIFO QUEUE
+// Why QUEUE (FIFO principle)?
+// - FIFO (First-In-First-Out) perfectly matches role requirements: Patients are admitted in arrival order (enqueue at rear)
+//   and discharged in the same order (dequeue from front—"remove the earliest admitted patient after treatment").
+// - Ensures fairness in routine flows: No line-jumping (unlike priority queue for emergencies in Role 3).
+// - "View Patient Queue" displays waiting list in exact order (front to rear), simulating hospital waiting room.
+// - Aligns with scenario: "Managing patient queues" during peak ops—efficient for sequential processing.
+// Why ARRAY as underlying structure?
+// - Fixed size (MAX_PATIENTS=100): Predictable memory (O(1) access), suits bounded hospital queue (e.g., limited beds).
+//   No dynamic resizing needed—avoids complexity/overhead of linked lists (pointers, fragmentation).
+// - O(1) enqueue/dequeue amortized (rear++/front++); simple linear traversal for view (O(n), fine for n=100).
+// - Vs. Linked List: Array faster (contiguous memory, cache-friendly); linked list better for unbounded but adds nodes (unneeded here).
+// - No STL (<queue>/<vector>): Manual impl per rules—core C++ only.
+// Innovation: Auto-ID (prevents dupes), uppercase names (uniform records), search bonus (quick lookup for efficiency).
+// Challenges Addressed: "Routine patient flows" (FIFO order) + "user-friendly menu-driven" (sub-menu integration).
 
 #ifndef PATIENT_ADMISSION_HPP
 #define PATIENT_ADMISSION_HPP
 
-#include <string>  // For std::string (core C++ for patient name/condition)
+#include <string>
 
 struct Patient {
-    int id;                // Unique auto-generated patient ID
-    std::string name;      // Patient's full name (trimmed)
-    std::string condition; // Condition type (e.g., "Fever", "Routine Checkup")
-    // Why struct? Groups related data for patients; easy to enqueue/dequeue as a unit.
-    // Keeps code readable and maintainable; passed by value/const ref for efficiency.
+    int id;          // Auto-generated unique ID
+    std::string name;  // Uppercase for uniformity
+    std::string condition;
+    // Why struct? Bundles patient data cleanly for queue ops.
 };
 
 class PatientAdmission {
 private:
-    static const int MAX_PATIENTS = 100;  // Fixed max size; why? Predictable memory use in hospital simulation.
-                                          // If exceeded, handle gracefully (no crashes; message simulates overflow).
-    Patient queue[MAX_PATIENTS];          // Array to store patients.
-    int front;                            // Index of front (earliest patient to discharge).
-    int rear;                             // Index of rear (next spot for new admission).
-    int currentSize;                      // Track number of patients for O(1) checks.
-    int nextId;                           // Auto-ID counter; starts at 1, increments per admit.
-
-    // Persistence helpers:
-    void loadFromFile();                  // Load queue and max ID from patients.txt on startup.
-    void saveToFile() const;              // Save current queue to patients.txt after changes.
-    int findMaxIdFromFile() const;        // Helper: Scan file for highest ID to resume auto-increment.
+    static const int MAX_PATIENTS = 100;  // Why? Predictable size; overflow handled gracefully.
+    Patient queue[MAX_PATIENTS];          // Array storage.
+    int front;                            // Earliest patient index.
+    int rear;                             // Next add index.
+    int currentSize;                      // Count for quick checks.
+    int nextId;                           // Auto-ID starter (innovation: avoids manual dupes).
 
 public:
-    PatientAdmission();                   // Constructor: Initialize empty queue, load data.
-    ~PatientAdmission();                  // Destructor: Save on exit for final persistence.
-    
-    // Core functionalities (as per role spec; detailed with validation/feedback):
-    bool admitPatient(const std::string& name = "", const std::string& condition = ""); 
-                                          // Enqueue: Add new patient with auto-ID. Optional params for manual ID override (future-proof).
-                                          // Returns true if successful; prompts user in menu for details.
-    bool dischargePatient();              // Dequeue: Remove/display earliest patient. Returns true if not empty.
-    void viewPatientQueue() const;        // Display all waiting patients in FIFO order (front to rear).
-    
-    // Enhanced utilities for robustness (innovation: detailed stats/edges):
+    PatientAdmission();                   // Init empty queue.
+    ~PatientAdmission() {}                // No cleanup needed.
+
+    // Core 3 functionalities:
+    bool admitPatient();                  // Add to rear (prompts input, auto-ID, uppercase name).
+    bool dischargePatient();              // Remove from front, display.
+    void viewPatientQueue() const;        // Show FIFO order.
+
+    // Bonus (innovation):
+    bool searchPatientById(int id) const; // O(n) scan: Find/display by ID.
+
+    // Helpers:
     bool isEmpty() const { return currentSize == 0; }
     bool isFull() const { return currentSize == MAX_PATIENTS; }
     int getQueueSize() const { return currentSize; }
-    int getNextAvailableId() const { return nextId; }  // Peek next ID for demo/Q&A.
-    
-    // Menu integration (user-friendly sub-menu for standalone/main.cpp use):
-    void displayMenu();                   // Loops sub-options 1-3 until back; handles input errors.
-    
-    // Bonus for full marks (creativity: Search by ID for quick lookup in large queue):
-    bool searchPatientById(int searchId) const;  // Returns true if found, displays details.
+
+    // Menu for demo/integration:
+    void displayMenu();                   // Sub-menu loop (now with option 4: search).
 };
 
-#endif // PATIENT_ADMISSION_HPP
+#endif

@@ -9,34 +9,64 @@ class MedicalSupply;
 class Emergency;
 class Ambulance;
 class PatientAdmission;
-
 int main() {
-    // Initialize role objects
     PatientAdmission pa;
-    MedicalSupply* ms = nullptr;
+    MedicalSupply* ms = nullptr;   // create later when needed
     Emergency* ed = nullptr;
     Ambulance* ad = nullptr;
 
     int choice;
-    cout << "=== Hospital Patient Care Management System ===" << endl;
-    cout << "1. Patient Admission (Role 1)" << endl;
-    cout << "2. Medical Supply Management (Role 2)" << endl;
-    cout << "3. Emergency Department (Role 3)" << endl;
-    cout << "4. Ambulance Dispatch (Role 4)" << endl;
-    cout << "0. Exit" << endl;
-    cout << "Enter choice: ";
-    cin >> choice;
 
-    // Role-based menu routing (expand with sub-menus for each role's 3 functionalities)
-    switch (choice) {
-        case 1:
-            // Sub-menu for Role 1: Admit, Discharge, View
-            pa.displayMenu();  // Example: Call a menu method in your class
-            break;
-        // ... similar for cases 2-4
-        case 0: return 0;
-        default: cout << "Invalid choice!" << endl;
-    }
-    // Loop for continuous menu (while true, or until exit)
+    do {
+        cout << "\n==============================================\n";
+        cout << "      HOSPITAL PATIENT CARE MANAGEMENT SYSTEM\n";
+        cout << "==============================================\n";
+        cout << "1. Patient Admission (Role 1)\n";
+        cout << "2. Medical Supply Management (Role 2)\n";
+        cout << "3. Emergency Department (Role 3)\n";
+        cout << "4. Ambulance Dispatch (Role 4)\n";
+        cout << "0. Exit\n";
+        cout << "----------------------------------------------\n";
+        cout << "Enter choice: ";
+
+        cin >> choice;
+
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input. Please enter a number.\n";
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                pa.displayMenu();
+                break;
+
+            case 2:
+                cout << "\n[ Medical Supply Management not implemented yet ]\n";
+                // Later: ms->displayMenu();
+                break;
+
+            case 3:
+                cout << "\n[ Emergency Department not implemented yet ]\n";
+                // Later: ed->displayMenu();
+                break;
+
+            case 4:
+                cout << "\n[ Ambulance Dispatch not implemented yet ]\n";
+                // Later: ad->displayMenu();
+                break;
+
+            case 0:
+                cout << "\nExiting system... Goodbye.\n";
+                break;
+
+            default:
+                cout << "\nInvalid choice. Please try again.\n";
+        }
+
+    } while (choice != 0);
+
     return 0;
 }
