@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 #include "PatientAdmission.hpp"  // Include all role headers
 #include "MedicalSupply.hpp"
 #include "Emergency.hpp"
@@ -14,7 +15,7 @@ int main() {
     PatientAdmission pa;
     MedicalSupply* ms = nullptr;   // create later when needed
     Emergency* ed = nullptr;
-    Ambulance* ad = nullptr;
+    Ambulance ad; // dispatcher instance for role 4
 
     int choice;
 
@@ -55,8 +56,8 @@ int main() {
                 break;
 
             case 4:
-                cout << "\n[ Ambulance Dispatch not implemented yet ]\n";
-                // Later: ad->displayMenu();
+                cout << "\n[ Ambulance Dispatch ]\n";
+                ad.displayMenu();
                 break;
 
             case 0:

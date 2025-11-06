@@ -14,6 +14,7 @@
 
 #include "PatientAdmission.hpp"
 #include <iostream>
+#include <limits>
 #include <iomanip>
 #include <cctype>  // For toupper (uppercase transform).
 using namespace std;
