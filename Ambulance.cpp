@@ -19,8 +19,10 @@
 
 #include "Ambulance.hpp"
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <limits>
+#include <algorithm>
 
 using namespace std;
 
@@ -30,7 +32,9 @@ struct Ambulance::Node {
 	Node(const Record& r): data(r), next(nullptr) {}
 };
 
-Ambulance::Ambulance(): tail(nullptr), nextId(1) {}
+Ambulance::Ambulance(): tail(nullptr), nextId(1) {
+    loadFromFile(); // Automatically load roster when object is created
+}
 
 Ambulance::~Ambulance() {
 	clearAll();
@@ -86,6 +90,7 @@ bool Ambulance::registerAmbulance() {
 		tail = node;
 	}
 	cout << "Registered ambulance ID " << r.id << ": " << r.vehicleReg << " (" << r.driverName << ")" << endl;
+	saveToFile(); // Auto-save after registration
 	return true;
 }
 
@@ -135,6 +140,7 @@ bool Ambulance::removeAmbulance(int id) {
 				delete cur;
 			}
 			cout << "Removed ambulance ID " << id << "." << endl;
+			saveToFile(); // Auto-save after removal
 			return true;
 		}
 		prev = cur;
@@ -144,19 +150,86 @@ bool Ambulance::removeAmbulance(int id) {
 	return false;
 }
 
-void Ambulance::displayMenu() {
-	int choice;
-	do {
-		cout << "\n====== Ambulance Dispatch Menu ======\n"
-			 << "1. Register Ambulance\n"
-			 << "2. Rotate Ambulance Shift\n"
-			 << "3. Display Ambulance Schedule\n"
-			 << "4. Remove Ambulance by ID\n"
-			 << "0. Back to Main Menu\n"
-			 << "------------------------------------\n"
-			 << "Enter your choice: ";
+bool Ambulance::saveToFile(const string& filename) {
+    // Create data/ folder if it doesn't exist (simple approach: try to open and assume folder exists)
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cout << "Error: Could not open " << filename << " for writing." << endl;
+        return false;
+    }
+    if (!tail) {
+        cout << "No ambulances to save." << endl;
+        file.close();
+        return true;
+    }
+    // Write header
+    file << "ID,Vehicle,Driver,Notes\n";
+    // Iterate and write all nodes
+    Node* cur = tail->next; // head
+    do {
+        const Record& r = cur->data;
+        file << r.id << ","
+             << r.vehicleReg << ","
+             << r.driverName << ","
+             << r.notes << "\n";
+        cur = cur->next;
+    } while (cur != tail->next);
+    file.close();
+    cout << "Saved " << filename << " successfully." << endl;
+    return true;
+}
 
-		cin >> choice;
+bool Ambulance::loadFromFile(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cout << "Warning: File " << filename << " not found. Starting with empty roster." << endl;
+        return false;
+    }
+    clearAll(); // Clear current list
+    string line;
+    getline(file, line); // Skip header
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+        // Parse CSV: ID,Vehicle,Driver,Notes
+        // Simple parse: split by comma (note: Notes field may not contain commas in this simple version)
+        size_t pos1 = line.find(',');
+        size_t pos2 = line.find(',', pos1 + 1);
+        size_t pos3 = line.find(',', pos2 + 1);
+        if (pos1 == string::npos || pos2 == string::npos || pos3 == string::npos) continue;
+        
+        int id = stoi(line.substr(0, pos1));
+        string vehicle = line.substr(pos1 + 1, pos2 - pos1 - 1);
+        string driver = line.substr(pos2 + 1, pos3 - pos2 - 1);
+        string notes = line.substr(pos3 + 1);
+        
+        Record r{ id, vehicle, driver, notes };
+        Node* node = new Node(r);
+        if (!tail) {
+            node->next = node;
+            tail = node;
+        } else {
+            node->next = tail->next; // head
+            tail->next = node;
+            tail = node;
+        }
+        nextId = max(nextId, id + 1); // Update nextId
+    }
+    file.close();
+    cout << "Loaded " << filename << " successfully." << endl;
+    return true;
+}
+
+void Ambulance::displayMenu() {
+    int choice;
+    do {
+        cout << "\n====== Ambulance Dispatch Menu ======\n"
+             << "1. Register Ambulance\n"
+             << "2. Rotate Ambulance Shift\n"
+             << "3. Display Ambulance Schedule\n"
+             << "4. Remove Ambulance by ID\n"
+             << "0. Back to Main Menu\n"
+             << "------------------------------------\n"
+             << "Enter your choice: ";		cin >> choice;
 		if (cin.fail()) {
 			cin.clear();
 			cin.ignore(numeric_limits<streamsize>::max(), '\n');

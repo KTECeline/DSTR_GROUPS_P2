@@ -28,6 +28,12 @@ public:
 	// Optional: remove ambulance by id
 	bool removeAmbulance(int id);
 
+	// Persist ambulances to file
+	bool saveToFile(const std::string& filename = "data/ambulances.txt");
+
+	// Load ambulances from file (clears current list first)
+	bool loadFromFile(const std::string& filename = "data/ambulances.txt");
+
 	// Menu driven interface (mirrors PatientAdmission style)
 	void displayMenu();
 

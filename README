@@ -7,6 +7,12 @@ git add .
 git commit -m "cmment"
 git push
 
+To compile the program, use the following command in your terminal:
+g++ -std=c++11 -Wall -Wextra -g main.cpp PatientAdmission.cpp MedicalSupply.cpp Emergency.cpp Ambulance.cpp -o hospital.exe
+
+To run the program, execute the compiled binary:
+.\hospital.exe
+
 HospitalManagementSystem/  (Root folder—name it something descriptive like this)
 ├── main.cpp                  (Entry point: Menu system that initializes all roles and routes user choices)
 ├── PatientAdmission.hpp      (Header for Role 1: Class declaration, e.g., PatientQueue class)
