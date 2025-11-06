@@ -1,5 +1,5 @@
 # Ignore all executable files
 *.exe
 
-# Ignore all text files
-*.txt
+# Ignore my text notes, but not other text files ~ Matthew
+zzz_notes.txt
