@@ -14,11 +14,11 @@
 
 #include "PatientAdmission.hpp"
 #include <iostream>
-#include <limits>
 #include <iomanip>
 #include <cctype>  // For toupper (uppercase transform).
 #include <fstream>
 #include <sstream>
+#include <ctime>    // For time()
 using namespace std;
 
 // Helper: Uppercase a string (innovation: Standardizes names for clean records/search).
@@ -56,7 +56,20 @@ bool PatientAdmission::admitPatient() {
     toUppercase(condition); // Transform condition to caps
     queue[rear++] = {id, name, condition};
     currentSize++;
-    cout << "Admitted: " << name << " (ID " << id << ")." << endl;
+    
+    // Print hospital admission ticket
+    cout << "\n╔═════════════════════════════════════════╗" << endl;
+    cout << "║         HOSPITAL ADMISSION TICKET         ║" << endl;
+    cout << "╠═════════════════════════════════════════╣" << endl;
+    cout << "║ Patient ID: " << setw(30) << left << id << "║" << endl;
+    cout << "║ Name: " << setw(34) << left << name << "║" << endl;
+    cout << "║ Condition: " << setw(30) << left << condition << "║" << endl;
+    time_t now = time(nullptr);
+    string datetime = ctime(&now);
+    datetime = datetime.substr(0, datetime.length()-1);  // Remove newline
+    cout << "║ Time: " << setw(34) << left << datetime << "║" << endl;
+    cout << "╚═════════════════════════════════════════╝" << endl;
+    
     savePatientsToFile("data/patients.txt");  // Save after admission
     return true;
 }
