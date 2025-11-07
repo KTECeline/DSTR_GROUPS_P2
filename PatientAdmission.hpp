@@ -56,6 +56,10 @@ public:
 
     // Menu for demo/integration:
     void displayMenu();                   // Sub-menu loop (now with option 4: search).
+
+    // File Operations:
+    bool loadPatientsFromFile(const std::string& filename);  // Load patient data from file
+    bool savePatientsToFile(const std::string& filename) const;  // Save patient data to file
 };
 
 #endif

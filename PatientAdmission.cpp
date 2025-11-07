@@ -17,6 +17,8 @@
 #include <limits>
 #include <iomanip>
 #include <cctype>  // For toupper (uppercase transform).
+#include <fstream>
+#include <sstream>
 using namespace std;
 
 // Helper: Uppercase a string (innovation: Standardizes names for clean records/search).
@@ -28,7 +30,8 @@ void toUppercase(string& str) {
 }
 
 PatientAdmission::PatientAdmission() : front(0), rear(0), currentSize(0), nextId(1) {
-    // Reset for clean start. Why? Simulates new shift.
+    // Load existing patients from file on startup
+    loadPatientsFromFile("data/patients.txt");
 }
 
 bool PatientAdmission::admitPatient() {
@@ -49,10 +52,12 @@ bool PatientAdmission::admitPatient() {
         nextId--;  // Undo ID.
         return false;
     }
-    toUppercase(name);  // Transform to caps.
+    toUppercase(name);     // Transform name to caps
+    toUppercase(condition); // Transform condition to caps
     queue[rear++] = {id, name, condition};
     currentSize++;
     cout << "Admitted: " << name << " (ID " << id << ")." << endl;
+    savePatientsToFile("data/patients.txt");  // Save after admission
     return true;
 }
 
@@ -65,6 +70,7 @@ bool PatientAdmission::dischargePatient() {
     Patient p = queue[front++];
     cout << "Discharged: " << p.name << " (ID " << p.id << ", " << p.condition << ")." << endl;
     currentSize--;
+    savePatientsToFile("data/patients.txt");  // Save after discharge
     return true;
 }
 
@@ -86,7 +92,7 @@ void PatientAdmission::viewPatientQueue() const {
 }
 
 bool PatientAdmission::searchPatientById(int searchId) const {
-    // Bonus: Scan queue for ID (O(n); from front for order relevance).
+    // Scan queue for ID (O(n); from front for order relevance).
     // Why? Efficient check without full view (e.g., "Is patient X waiting?").
     if (searchId < 1) {
         cout << "Invalid ID." << endl;
@@ -165,4 +171,57 @@ void PatientAdmission::displayMenu() {
         }
 
     } while (choice != 0);
+}
+
+bool PatientAdmission::loadPatientsFromFile(const string& filename) {
+    ifstream file(filename);
+    if (!file) {
+        cout << "Note: No existing patient file found. Starting fresh." << endl;
+        return false;
+    }
+
+    string line;
+    int maxId = 0;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string idStr, name, condition;
+        
+        // Parse CSV format (ID,Name,Condition)
+        if (getline(ss, idStr, ',') && 
+            getline(ss, name, ',') && 
+            getline(ss, condition)) {
+            
+            int id = stoi(idStr);
+            maxId = max(maxId, id);  // Track highest ID
+            
+            if (currentSize < MAX_PATIENTS) {
+                queue[rear].id = id;
+                queue[rear].name = name;
+                queue[rear].condition = condition;
+                rear++;
+                currentSize++;
+            }
+        }
+    }
+    
+    nextId = maxId + 1;  // Set next ID to be one more than highest loaded
+    file.close();
+    return true;
+}
+
+bool PatientAdmission::savePatientsToFile(const string& filename) const {
+    ofstream file(filename);
+    if (!file) {
+        cout << "Error: Cannot open file for saving." << endl;
+        return false;
+    }
+
+    for (int i = front; i < front + currentSize; ++i) {
+        int idx = i < MAX_PATIENTS ? i : i % MAX_PATIENTS;
+        const Patient& p = queue[idx];
+        file << p.id << "," << p.name << "," << p.condition << endl;
+    }
+
+    file.close();
+    return true;
 }
