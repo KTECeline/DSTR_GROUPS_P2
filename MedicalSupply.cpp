@@ -23,12 +23,6 @@
 //   Pop (Use Last Supply)    → O(1)
 //   View (Traverse Stack)    → O(n)
 //   File I/O (Save/Load)     → O(n)
-// ----------------------------------------------------------------------------
-// Key Learning Points / Marking Criteria Alignment:
-// ✅ Excellent DS Justification — clear use of Stack + Linked List combo.
-// ✅ Robust validation and safe memory management (manual new/delete).
-// ✅ Readable, modular, and well-commented structure.
-// ✅ Demonstrates high-level problem-solving and efficient DS application.
 // ============================================================================
 
 #include "MedicalSupply.hpp"
