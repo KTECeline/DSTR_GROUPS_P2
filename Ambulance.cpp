@@ -23,6 +23,9 @@
 #include <iomanip>
 #include <limits>
 #include <algorithm>
+#include <ctime>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -55,6 +58,16 @@ void Ambulance::clearAll() {
 }
 
 bool Ambulance::registerAmbulance() {
+    // FUNCTIONALITY 1: REGISTER AMBULANCE
+    // Purpose: Add new ambulance to active-duty rotation
+    // Implementation: 
+    // - Collects vehicle registration, driver name, and optional notes
+    // - Performs input validation (non-empty fields)
+    // - Checks for duplicate vehicle registrations
+    // - Creates new node and appends to tail of circular list
+    // - Maintains circular structure: new node points to head, tail points to new node
+    // - Auto-increments ID and auto-saves to file
+
 	cout << "Enter vehicle registration (no spaces): ";
 	string reg; cin >> ws; getline(cin, reg);
 	cout << "Enter driver name: ";
@@ -79,7 +92,7 @@ bool Ambulance::registerAmbulance() {
 		} while (cur != tail->next);
 	}
 
-	Record r{ nextId++, reg, driver, notes };
+	Record r{ nextId++, reg, driver, notes, 0, 0, false }; // Initialize scheduling fields: shiftStart=0, shiftEnd=0, isOnDuty=false
 	Node* node = new Node(r);
 	if (!tail) {
 		node->next = node;
@@ -95,6 +108,15 @@ bool Ambulance::registerAmbulance() {
 }
 
 bool Ambulance::rotateShift() {
+    // FUNCTIONALITY 2: ROTATE AMBULANCE SHIFT  
+    // Purpose: Implement round-robin scheduling for equal duty time
+    // Implementation:
+    // - O(1) operation: advances tail pointer (tail = tail->next)
+    // - This effectively moves the "head" position to next ambulance
+    // - Handles edge cases: empty list, single ambulance (no-op)
+    // - Maintains circular structure without node copying/moving
+    // Data Structure Advantage: Circular list enables O(1) rotation vs O(n) array shifting
+
 	if (!tail) {
 		cout << "No ambulances to rotate." << endl;
 		return false;
@@ -109,19 +131,53 @@ bool Ambulance::rotateShift() {
 }
 
 void Ambulance::displaySchedule() const {
+    // CONSOLIDATED DISPLAY: Shows ambulance schedule with all details
+    // Purpose: Single comprehensive display supporting multiple views
+    // Features:
+    // - Shows all ambulances with complete information
+    // - Displays rotation order (Head -> Tail) with shift times
+    // - Includes on-duty status for easy dispatch decisions
+    // - Sortable by time if needed (rotation order shown by default)
+
 	if (!tail) {
 		cout << "No ambulances registered." << endl;
 		return;
 	}
-	cout << "\n[ Ambulance Schedule (Head -> ... -> Tail) ]" << endl;
-	cout << left << setw(6) << "ID" << setw(15) << "Vehicle" << setw(20) << "Driver" << "Notes" << endl;
-	cout << string(60, '-') << endl;
-	Node* cur = tail->next; // head
+
+	// Collect ambulances into vector for potential sorting
+	vector<Node*> ambulances;
+	Node* cur = tail->next;
 	do {
-		const Record& r = cur->data;
-		cout << left << setw(6) << r.id << setw(15) << r.vehicleReg << setw(20) << r.driverName << r.notes << endl;
+		ambulances.push_back(cur);
 		cur = cur->next;
 	} while (cur != tail->next);
+
+	cout << "\n[ AMBULANCE SCHEDULE & ROTATION STATUS ]" << endl;
+	cout << left << setw(6) << "ID" << setw(14) << "Vehicle" << setw(18) << "Driver" 
+		 << setw(14) << "Shift" << setw(10) << "On-Duty" << "Notes" << endl;
+	cout << string(95, '-') << endl;
+
+	// Display in rotation order (head to tail)
+	for (size_t i = 0; i < ambulances.size(); ++i) {
+		const Record& r = ambulances[i]->data;
+		
+		// Display position indicator
+		string position;
+		if (i == 0) position = "[HEAD] ";
+		else if (i == ambulances.size() - 1) position = "[TAIL]";
+		else position = "       ";
+
+		string shiftTime;
+		if (r.shiftStart == 0 && r.shiftEnd == 0) {
+			shiftTime = "Not assigned";
+		} else {
+			shiftTime = minutesToTime(r.shiftStart) + "-" + minutesToTime(r.shiftEnd);
+		}
+		string onDutyStr = r.isOnDuty ? "Yes" : "No";
+		
+		cout << left << setw(6) << r.id << setw(14) << r.vehicleReg << setw(18) << r.driverName 
+			 << setw(14) << shiftTime << setw(10) << onDutyStr << position << r.notes << endl;
+	}
 }
 
 bool Ambulance::removeAmbulance(int id) {
@@ -163,7 +219,7 @@ bool Ambulance::saveToFile(const string& filename) {
         return true;
     }
     // Write header
-    file << "ID,Vehicle,Driver,Notes\n";
+    file << "ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty\n";
     // Iterate and write all nodes
     Node* cur = tail->next; // head
     do {
@@ -171,7 +227,10 @@ bool Ambulance::saveToFile(const string& filename) {
         file << r.id << ","
              << r.vehicleReg << ","
              << r.driverName << ","
-             << r.notes << "\n";
+             << r.notes << ","
+             << r.shiftStart << ","
+             << r.shiftEnd << ","
+             << (r.isOnDuty ? "1" : "0") << "\n";
         cur = cur->next;
     } while (cur != tail->next);
     file.close();
@@ -190,19 +249,47 @@ bool Ambulance::loadFromFile(const string& filename) {
     getline(file, line); // Skip header
     while (getline(file, line)) {
         if (line.empty()) continue;
-        // Parse CSV: ID,Vehicle,Driver,Notes
-        // Simple parse: split by comma (note: Notes field may not contain commas in this simple version)
+        // Parse CSV: ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty
         size_t pos1 = line.find(',');
         size_t pos2 = line.find(',', pos1 + 1);
         size_t pos3 = line.find(',', pos2 + 1);
+        size_t pos4 = line.find(',', pos3 + 1);
+        size_t pos5 = line.find(',', pos4 + 1);
+        size_t pos6 = line.find(',', pos5 + 1);
+        
         if (pos1 == string::npos || pos2 == string::npos || pos3 == string::npos) continue;
         
         int id = stoi(line.substr(0, pos1));
         string vehicle = line.substr(pos1 + 1, pos2 - pos1 - 1);
         string driver = line.substr(pos2 + 1, pos3 - pos2 - 1);
-        string notes = line.substr(pos3 + 1);
         
-        Record r{ id, vehicle, driver, notes };
+        // Handle Notes field (may contain commas or may not exist in old format)
+        string notes, shiftStartStr, shiftEndStr, isOnDutyStr;
+        int shiftStart = 0, shiftEnd = 0;
+        bool isOnDuty = false;
+        
+        if (pos4 != string::npos) {
+            // New format with scheduling fields
+            notes = line.substr(pos3 + 1, pos4 - pos3 - 1);
+            shiftStartStr = line.substr(pos4 + 1, pos5 - pos4 - 1);
+            shiftEndStr = line.substr(pos5 + 1, pos6 - pos5 - 1);
+            isOnDutyStr = line.substr(pos6 + 1);
+            
+            try {
+                shiftStart = stoi(shiftStartStr);
+                shiftEnd = stoi(shiftEndStr);
+                isOnDuty = (stoi(isOnDutyStr) != 0);
+            } catch (...) {
+                shiftStart = 0;
+                shiftEnd = 0;
+                isOnDuty = false;
+            }
+        } else {
+            // Old format without scheduling fields
+            notes = line.substr(pos3 + 1);
+        }
+        
+        Record r{ id, vehicle, driver, notes, shiftStart, shiftEnd, isOnDuty };
         Node* node = new Node(r);
         if (!tail) {
             node->next = node;
@@ -219,14 +306,191 @@ bool Ambulance::loadFromFile(const string& filename) {
     return true;
 }
 
+// SCHEDULING METHODS
+
+int Ambulance::timeToMinutes(const string& time) {
+    // Convert "HH:MM" format to minutes since midnight
+    // Example: "08:30" -> 510 minutes
+    try {
+        size_t colonPos = time.find(':');
+        if (colonPos == string::npos) return -1;
+        
+        int hours = stoi(time.substr(0, colonPos));
+        int minutes = stoi(time.substr(colonPos + 1));
+        
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return -1;
+        }
+        return hours * 60 + minutes;
+    } catch (...) {
+        return -1;
+    }
+}
+
+string Ambulance::minutesToTime(int minutes) {
+    // Convert minutes since midnight to "HH:MM" format
+    // Example: 510 -> "08:30", 1440 -> "24:00" (valid end-of-day time)
+    if (minutes < 0 || minutes > 1440) {
+        return "INVALID";
+    }
+    int hours = minutes / 60;
+    int mins = minutes % 60;
+    ostringstream oss;
+    oss << setfill('0') << setw(2) << hours << ":" << setw(2) << mins;
+    return oss.str();
+}
+
+bool Ambulance::assignShift(int ambulanceId, int shiftStart, int shiftEnd) {
+    // SCHEDULING: Assign shift times to an ambulance
+    // Parameters: ambulanceId, shiftStart (minutes since midnight), shiftEnd (minutes since midnight)
+    // Validation: ensure start < end, both are valid times (0-1440)
+    
+    if (shiftStart < 0 || shiftEnd <= shiftStart || shiftEnd > 1440) {
+        cout << "Invalid shift times. Start must be before end, and within 0-1440 minutes." << endl;
+        return false;
+    }
+    
+    if (!tail) {
+        cout << "No ambulances registered." << endl;
+        return false;
+    }
+    
+    Node* cur = tail->next; // head
+    do {
+        if (cur->data.id == ambulanceId) {
+            cur->data.shiftStart = shiftStart;
+            cur->data.shiftEnd = shiftEnd;
+            cout << "Assigned shift to ambulance ID " << ambulanceId << ": "
+                 << minutesToTime(shiftStart) << " - " << minutesToTime(shiftEnd) << endl;
+            saveToFile();
+            return true;
+        }
+        cur = cur->next;
+    } while (cur != tail->next);
+    
+    cout << "Ambulance ID " << ambulanceId << " not found." << endl;
+    return false;
+}
+
+void Ambulance::updateDutyStatus() {
+    // Update on-duty status for all ambulances based on current system time
+    time_t now = time(nullptr);
+    struct tm* timeinfo = localtime(&now);
+    int currentMinutes = timeinfo->tm_hour * 60 + timeinfo->tm_min;
+    
+    if (!tail) return;
+    
+    Node* cur = tail->next;
+    do {
+        // Check if current time falls within shift window
+        if (cur->data.shiftStart == 0 && cur->data.shiftEnd == 0) {
+            // No shift assigned
+            cur->data.isOnDuty = false;
+        } else if (cur->data.shiftStart < cur->data.shiftEnd) {
+            // Normal case: start < end (e.g., 8:00 AM - 4:00 PM)
+            cur->data.isOnDuty = (currentMinutes >= cur->data.shiftStart && currentMinutes < cur->data.shiftEnd);
+        } else {
+            // Overnight shift: start > end (e.g., 10:00 PM - 6:00 AM) - not typical, kept for robustness
+            cur->data.isOnDuty = (currentMinutes >= cur->data.shiftStart || currentMinutes < cur->data.shiftEnd);
+        }
+        cur = cur->next;
+    } while (cur != tail->next);
+}
+
+bool Ambulance::isAmbulanceOnDuty(int ambulanceId) const {
+    if (!tail) return false;
+    
+    Node* cur = tail->next;
+    do {
+        if (cur->data.id == ambulanceId) {
+            return cur->data.isOnDuty;
+        }
+        cur = cur->next;
+    } while (cur != tail->next);
+    
+    return false;
+}
+
+void Ambulance::displayOnDutyAmbulances() const {
+    // Display all currently on-duty ambulances (filtered view)
+    if (!tail) {
+        cout << "No ambulances registered." << endl;
+        return;
+    }
+    
+    cout << "\n[ CURRENTLY ON-DUTY AMBULANCES ]" << endl;
+    cout << left << setw(6) << "ID" << setw(14) << "Vehicle" << setw(18) << "Driver" 
+         << setw(14) << "Shift" << "Notes" << endl;
+    cout << string(85, '-') << endl;
+    
+    bool foundAny = false;
+    Node* cur = tail->next;
+    do {
+        const Record& r = cur->data;
+        if (r.isOnDuty) {
+            string shiftTime = minutesToTime(r.shiftStart) + "-" + minutesToTime(r.shiftEnd);
+            cout << left << setw(6) << r.id << setw(14) << r.vehicleReg << setw(18) << r.driverName 
+                 << setw(14) << shiftTime << r.notes << endl;
+            foundAny = true;
+        }
+        cur = cur->next;
+    } while (cur != tail->next);
+    
+    if (!foundAny) {
+        cout << "No ambulances currently on duty." << endl;
+    }
+}
+
+void Ambulance::displayScheduleByTime() const {
+    // Display ambulances sorted by shift start time (optional filtered view)
+    if (!tail) {
+        cout << "No ambulances registered." << endl;
+        return;
+    }
+    
+    cout << "\n[ AMBULANCE SCHEDULE (Sorted by Shift Time) ]" << endl;
+    cout << left << setw(6) << "ID" << setw(14) << "Vehicle" << setw(18) << "Driver" 
+         << setw(14) << "Shift" << setw(10) << "On-Duty" << "Notes" << endl;
+    cout << string(95, '-') << endl;
+    
+    // Collect all ambulances into a temporary vector for sorting
+    vector<Node*> ambulances;
+    Node* cur = tail->next;
+    do {
+        ambulances.push_back(cur);
+        cur = cur->next;
+    } while (cur != tail->next);
+    
+    // Sort by shiftStart time
+    sort(ambulances.begin(), ambulances.end(), [](Node* a, Node* b) {
+        return a->data.shiftStart < b->data.shiftStart;
+    });
+    
+    // Display sorted ambulances
+    for (Node* node : ambulances) {
+        const Record& r = node->data;
+        string shiftTime;
+        if (r.shiftStart == 0 && r.shiftEnd == 0) {
+            shiftTime = "Not assigned";
+        } else {
+            shiftTime = minutesToTime(r.shiftStart) + "-" + minutesToTime(r.shiftEnd);
+        }
+        string onDutyStr = r.isOnDuty ? "Yes" : "No";
+        cout << left << setw(6) << r.id << setw(14) << r.vehicleReg << setw(18) << r.driverName 
+             << setw(14) << shiftTime << setw(10) << onDutyStr << r.notes << endl;
+    }
+}
+
 void Ambulance::displayMenu() {
     int choice;
     do {
-        cout << "\n====== Ambulance Dispatch Menu ======\n"
+        cout << "\n====== AMBULANCE DISPATCH MENU ======\n"
              << "1. Register Ambulance\n"
-             << "2. Rotate Ambulance Shift\n"
-             << "3. Display Ambulance Schedule\n"
-             << "4. Remove Ambulance by ID\n"
+             << "2. Rotate Ambulance Shift (Fair Rotation)\n"
+             << "3. Display Full Schedule & Status\n"
+             << "4. Assign Shift Time to Ambulance\n"
+             << "5. Update On-Duty Status (Current Time)\n"
+             << "6. Remove Ambulance by ID\n"
              << "0. Back to Main Menu\n"
              << "------------------------------------\n"
              << "Enter your choice: ";		cin >> choice;
@@ -246,10 +510,38 @@ void Ambulance::displayMenu() {
 				rotateShift();
 				break;
 			case 3:
-				cout << "\n[ Displaying Ambulance Schedule ]" << endl;
+				cout << "\n[ Full Ambulance Schedule ]" << endl;
+				updateDutyStatus();
 				displaySchedule();
 				break;
 			case 4: {
+				cout << "\n[ Assigning Shift ]" << endl;
+				int id;
+				string startStr, endStr;
+				cout << "Enter ambulance ID: ";
+				cin >> id;
+				cout << "Enter shift start time (HH:MM, e.g., 08:30): ";
+				cin >> startStr;
+				cout << "Enter shift end time (HH:MM, e.g., 16:30): ";
+				cin >> endStr;
+				
+				int startMin = timeToMinutes(startStr);
+				int endMin = timeToMinutes(endStr);
+				
+				if (startMin == -1 || endMin == -1) {
+					cout << "Invalid time format. Please use HH:MM (24-hour format)." << endl;
+				} else {
+					assignShift(id, startMin, endMin);
+				}
+				break;
+			}
+			case 5: {
+				cout << "\n[ Updating Duty Status ]" << endl;
+				updateDutyStatus();
+				cout << "Duty status updated based on current system time." << endl;
+				break;
+			}
+			case 6: {
 				int id;
 				cout << "Enter ambulance ID to remove: ";
 				cin >> id;

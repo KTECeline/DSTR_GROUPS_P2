@@ -19,6 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>    // For time()
+#include <limits>   // For numeric_limits
 using namespace std;
 
 // Helper: Uppercase a string (innovation: Standardizes names for clean records/search).

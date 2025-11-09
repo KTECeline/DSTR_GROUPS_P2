@@ -1,5 +1,5 @@
-ID,Vehicle,Driver,Notes
-1,Ambulance-01,John Doe,Ambulance for downtown dispatch
-2,Ambulance-02,Jane Smith,Ambulance for uptown dispatch
-3,ABCD123,Ruby Chan,Hai
-4,Qwerty123,Ichi niisan,123
+ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty
+2,Ambulance-02,Jane Smith,Uptown dispatch,600,960,0
+3,ABCD123,Ruby Chan,Emergency response,0,480,0
+4,Qwerty123,Ichi Niisan,Backup unit,720,1200,1
+1,Ambulance-01,John Doe,Downtown dispatch,480,960,1
