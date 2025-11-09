@@ -24,9 +24,9 @@ int main() {
         cout << "      HOSPITAL PATIENT CARE MANAGEMENT SYSTEM\n";
         cout << "==============================================\n";
         cout << "1. Patient Admission (Role 1: Array + FIFO Queue)\n";
-        cout << "2. Medical Supply Management (Role 2)\n";
+        cout << "2. Medical Supply Management (Role 2: Linked List + LIFO Stack)\n";
         cout << "3. Emergency Department (Role 3)\n";
-        cout << "4. Ambulance Dispatch (Role 4)\n";
+        cout << "4. Ambulance Dispatch (Role 4: Linked List + Circular Queue)\n";
         cout << "0. Exit\n";
         cout << "----------------------------------------------\n";
         cout << "Enter choice: ";

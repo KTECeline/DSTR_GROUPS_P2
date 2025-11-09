@@ -7,10 +7,10 @@
 //   Bounded size prevents memory leaks; linear scan for view/search is O(n) but trivial (n<=100, hospital-scale).
 // - Relevance to System: Supports "patient queues" challenge without priorities (Role 3 uses priority queue for urgency).
 //   Performance: Constant time core ops = handles peak flows; aligns with "efficient management" in outbreaks.
-// - Vs. Alternatives: Not Stack (LIFO—would discharge newest first, unfair); not Circular (no rotation needed here, Role 4).
 //   Array > Linked List: Simpler (no new/delete), faster for fixed max—focus on core DS, not mem mgmt.
-// Validation/Edges: Input checks, error msgs—boosts code quality (readability, correctness).
-// Uppercase: Standardizes output (e.g., "john" → "JOHN") for clean reports.
+//   Validation/Edges: Input checks, error msgs—boosts code quality (readability, correctness).
+//.  Innovation: Auto-ID (prevents dupes), uppercase names (uniform records), search bonus (quick lookup for efficiency).
+//  Saved patients to file for persistence across runs, in simple CSV format (ID,Name,Condition) in "data/patients.txt". 
 
 #include "PatientAdmission.hpp"
 #include <iostream>
