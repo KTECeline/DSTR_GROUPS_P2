@@ -72,6 +72,25 @@ bool MedicalSupply::parseCsvLine(const std::string& line, Supply& s) {
     return true;
 }
 
+bool MedicalSupply::isAlnumDash(const std::string& s) {
+    if (s.empty()) return false;
+    for (unsigned char c : s)
+        if (!(isalnum(c) || c == '-')) return false;
+    return true;
+}
+
+bool MedicalSupply::isValidDate(const std::string& d) {
+    if (d.size() != 10 || d[4] != '-' || d[7] != '-') return false;
+    for (int i : {0,1,2,3,5,6,8,9})
+        if (!isdigit(d[i])) return false;
+    int m = stoi(d.substr(5,2));
+    int day = stoi(d.substr(8,2));
+    if (m < 1 || m > 12) return false;
+    if (day < 1 || day > 31) return false;
+    return true;
+}
+
+
 // ============================================================================
 // Constructor/Destructor
 // - On construction, attempt to load the database (primary then fallback).
@@ -176,23 +195,49 @@ bool MedicalSupply::addSupply() {
 // ============================================================================
 bool MedicalSupply::useLastAddedSupply() {
     if (!top_) {
-        cout << "No supplies available.\n";
+        cout << "\n⚠️  No supplies available to use.\n";
         return false;
     }
-    Supply used{};
-    popNode(used); // O(1)
 
-    cout << "\nUsing last added supply:\n"
-         << "ID: "      << used.id       << "\n"
-         << "Name: "    << used.name     << "\n"
-         << "Batch: "   << used.batch    << "\n"
-         << "Quantity: "<< used.quantity << "\n"
-         << "Expiry: "  << used.expiry   << "\n"
-         << "Notes: "   << used.notes    << "\n";
+    cout << "\n------------------------------------\n";
+    cout << "🧺 FEATURE: Use 'Last Added' Supply (LIFO Stack)\n";
+    cout << "------------------------------------\n";
+    cout << "This operation always targets the *most recently added* item on the stack.\n";
+    cout << "However, you may choose how many units to use from it.\n\n";
 
-    saveToFile(); // persist after mutation
+    Supply &peek = top_->data;
+    cout << "Top of stack (most recent):\n";
+    cout << "ID: " << peek.id << "\n"
+         << "Name: " << peek.name << "\n"
+         << "Batch: " << peek.batch << "\n"
+         << "Quantity: " << peek.quantity << "\n"
+         << "Expiry: " << peek.expiry << "\n"
+         << "Notes: " << peek.notes << "\n\n";
+
+    cout << "Enter number of units to use (1 - " << peek.quantity << "): ";
+    int useQty;
+    if (!(cin >> useQty) || useQty <= 0 || useQty > peek.quantity) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "❌ Invalid quantity entered.\n";
+        return false;
+    }
+
+    peek.quantity -= useQty;
+
+    if (peek.quantity == 0) {
+        cout << "✅ All units used. Removing supply from stack...\n";
+        Supply used{};
+        popNode(used);
+    } else {
+        cout << "✅ " << useQty << " units used from " << peek.name
+             << " (Remaining: " << peek.quantity << ")\n";
+    }
+
+    saveToFile();
     return true;
 }
+
 
 // ============================================================================
 // FEATURE 3: viewCurrentSupplies()  ---  traverse (O(n))

@@ -89,6 +89,8 @@ private:
     static void trim(std::string& s);                 // whitespace hygiene
     static bool parseCsvLine(const std::string& line, // tolerant CSV parse
                              Supply& s);
+    static bool isAlnumDash(const std::string& s);
+    static bool isValidDate(const std::string& d);
 };
 
 #endif // MEDICALSUPPLY_HPP
