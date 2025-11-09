@@ -39,15 +39,17 @@ int main() {
             cout << "\nInvalid input. Please enter a number.\n";
             continue;
         }
-
         switch (choice) {
             case 1:
                 pa.displayMenu();
                 break;
 
             case 2:
-                cout << "\n[ Medical Supply Management not implemented yet ]\n";
-                // Later: ms->displayMenu();
+                cout << "\n[ Medical Supply Management ]\n";
+                {
+                    MedicalSupply ms;
+                    ms.displayMenu();
+                }
                 break;
 
             case 3:
@@ -67,6 +69,7 @@ int main() {
             default:
                 cout << "\nInvalid choice. Please try again.\n";
         }
+
 
     } while (choice != 0);
 
