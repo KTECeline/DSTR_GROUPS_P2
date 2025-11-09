@@ -13,9 +13,9 @@ class PatientAdmission;
 
 int main() {
     PatientAdmission pa;
-    MedicalSupply* ms = nullptr;   // create later when needed
+    MedicalSupply ms;  
     Emergency* ed = nullptr;
-    Ambulance ad; // dispatcher instance for role 4
+    Ambulance ad; 
 
     int choice;
 
@@ -46,8 +46,7 @@ int main() {
                 break;
 
             case 2:
-                cout << "\n[ Medical Supply Management not implemented yet ]\n";
-                // Later: ms->displayMenu();
+                ms.displayMenu();
                 break;
 
             case 3:
