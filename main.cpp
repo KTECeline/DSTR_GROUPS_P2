@@ -14,7 +14,7 @@ class PatientAdmission;
 int main() {
     PatientAdmission pa;
     MedicalSupply ms;  
-    Emergency* ed = nullptr;
+    EmergencyDepartment em;
     Ambulance ad; 
 
     int choice;
@@ -51,7 +51,7 @@ int main() {
 
             case 3:
                 cout << "\n[ Emergency Department not implemented yet ]\n";
-                // Later: ed->displayMenu();
+                em.displayMenu();
                 break;
 
             case 4:
