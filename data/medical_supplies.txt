@@ -1,4 +1,4 @@
 ID,Name,Quantity,Batch,Expiry,Notes
-5,Hand sanitizer,200,B002,2026-05-10,restock for A&E
-3,face mask,200,B002,2026-05-10,restock for ER
 1,Condoms,1000,B002,2025-05-09,nothing
+3,face mask,200,B002,2026-05-10,restock for ER
+5,Hand sanitizer,200,B002,2026-05-10,restock for A&E
