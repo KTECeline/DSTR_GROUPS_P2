@@ -14,6 +14,7 @@
 // - Reliability: Input validation, unique ID handling, sorting, and persistence.
 // ============================================================================
 
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -39,7 +40,7 @@ EmergencyDepartment::EmergencyDepartment() {
 // Ensures case-insensitive searches (e.g., "John" == "john").
 // O(n) time, where n = string length.
 string EmergencyDepartment::toLowerCase(string str) {
-    for (int i = 0; i < str.length(); i++) {
+    for (std::string::size_type i = 0; i < str.length(); ++i) {
         if (str[i] >= 'A' && str[i] <= 'Z')
             str[i] = str[i] + 32;
     }
@@ -442,10 +443,12 @@ int EmergencyDepartment::askInput(int min, int max, string prompt) {
 }
 
 // ===========================================================
-// MAIN FUNCTION — Menu-Driven Interface
+// Member UI — Menu-Driven Interface for EmergencyDepartment
+// Replaces a standalone main so this file can be linked with the
+// program's central `main.cpp`. This method lets `main.cpp` call
+// `EmergencyDepartment::displayMenu()` to enter the emergency menu.
 // ===========================================================
-int main() {
-    EmergencyDepartment dept;
+void EmergencyDepartment::displayMenu() {
     int choice;
 
     do {
@@ -458,23 +461,21 @@ int main() {
         cout << "4. Search by Patient Name\n";
         cout << "5. Search by Emergency Type\n";
         cout << "6. Update Case Priority\n";
-        cout << "7. Exit\n";
+        cout << "7. Return to Main Menu\n";
         cout << "----------------------------------------------\n";
 
-        choice = dept.askInput(1, 7, "Enter your choice (1-7): ");
+        choice = askInput(1, 7, "Enter your choice (1-7): ");
         if (choice == -1) continue;
 
         switch (choice) {
-            case 1: dept.logEmergencyCase(); break;
-            case 2: dept.processCriticalCase(); break;
-            case 3: dept.viewPendingCases(); break;
-            case 4: dept.searchByPatientName(); break;
-            case 5: dept.searchByEmergencyType(); break;
-            case 6: dept.updatePriority(); break;
-            case 7: cout << "\nExiting system... Goodbye!\n"; break;
+            case 1: logEmergencyCase(); break;
+            case 2: processCriticalCase(); break;
+            case 3: viewPendingCases(); break;
+            case 4: searchByPatientName(); break;
+            case 5: searchByEmergencyType(); break;
+            case 6: updatePriority(); break;
+            case 7: cout << "\nReturning to main menu...\n"; break;
         }
 
     } while (choice != 7);
-
-    return 0;
 }

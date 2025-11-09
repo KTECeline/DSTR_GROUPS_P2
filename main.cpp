@@ -25,7 +25,7 @@ int main() {
         cout << "==============================================\n";
         cout << "1. Patient Admission (Role 1: Array + FIFO Queue)\n";
         cout << "2. Medical Supply Management (Role 2: Linked List + LIFO Stack)\n";
-        cout << "3. Emergency Department (Role 3)\n";
+        cout << "3. Emergency Department (Role 3: Array + Priority Queue)\n";
         cout << "4. Ambulance Dispatch (Role 4: Linked List + Circular Queue)\n";
         cout << "0. Exit\n";
         cout << "----------------------------------------------\n";
@@ -50,7 +50,6 @@ int main() {
                 break;
 
             case 3:
-                cout << "\n[ Emergency Department not implemented yet ]\n";
                 em.displayMenu();
                 break;
 

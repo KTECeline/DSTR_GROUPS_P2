@@ -1,37 +1,134 @@
-git clone https://github.com/KTECeline/DSTR_GROUPS_P2.git
+# Hospital Management System (DSTR_GROUPS_P2)
 
+This repository contains a compact, menu-driven hospital management system implemented in C++. It demonstrates four role-based modules and simple file-based persistence for educational purposes.
 
-git pull
+Modules
+- Role 1 — Patient Admission (Array-based FIFO queue)
+- Role 2 — Medical Supply Manager (Linked-list stack)
+- Role 3 — Emergency Department (Priority queue / sorted array)
+- Role 4 — Ambulance Dispatcher (Circular linked list)
 
-git add . 
-git commit -m "cmment"
-git push
+The application persists small CSV/text files under `data/` so state is preserved between runs.
 
-To compile the program, use the following command in your terminal:
-g++ -std=c++11 -Wall -Wextra -g main.cpp PatientAdmission.cpp MedicalSupply.cpp Emergency.cpp Ambulance.cpp -o hospital.exe
+## Quick start
 
-To run the program, execute the compiled binary:
-.\hospital.exe
+Requirements
+- A C++ compiler supporting C++17 (g++ or clang++)
 
-HospitalManagementSystem/  (Root folder—name it something descriptive like this)
-├── main.cpp                  (Entry point: Menu system that initializes all roles and routes user choices)
-├── PatientAdmission.hpp      (Header for Role 1: Class declaration, e.g., PatientQueue class)
-├── PatientAdmission.cpp      (Implementation for Role 1: Your 3 functionalities + data structure logic)
-├── MedicalSupply.hpp         (Header for Role 2: Class declaration, e.g., SupplyStack class)
-├── MedicalSupply.cpp         (Implementation for Role 2: Your 3 functionalities + data structure logic)
-├── EmergencyDept.hpp         (Header for Role 3: Class declaration, e.g., EmergencyPriorityQueue class)
-├── EmergencyDept.cpp         (Implementation for Role 3: Your 3 functionalities + data structure logic)
-├── AmbulanceDispatch.hpp     (Header for Role 4: Class declaration, e.g., AmbulanceCircularQueue class)
-├── AmbulanceDispatch.cpp     (Implementation for Role 4: Your 3 functionalities + data structure logic)
-└── data/                     (Optional subfolder for any persistent files—e.g., if you save/load patient data)
-    ├── patients.csv          (Example: For Role 1 to log patients if needed)
-    ├── supplies.txt          (Example: For Role 2 to track batches)
-    ├── emergencies.csv       (Example: For Role 3)
-    └── ambulances.txt        (Example: For Role 4)
+Build
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp PatientAdmission.cpp Ambulance.cpp Emergency.cpp MedicalSupply.cpp -o main
+```
 
+Run
+```bash
+./main
+```
 
-Role,Suggested DS,Why? (Justify in Comments),Implementation Tip
-1: Patient Admission Clerk,Queue (FIFO),"Admit adds to end, discharge removes from front (earliest patient first). View shows queue order.","Array-based queue: Fixed size (e.g., 100 patients). Struct for Patient {int id; string name, condition;}."
-2: Medical Supply Manager,Stack (LIFO),"""Use Last Added"" = pop top (most recent supply first, like shelf restocking). Add = push. View = traverse stack.",Linked list-based stack for dynamic sizes (batches vary). Struct for Supply {string type; int qty; string batch;}.
-3: Emergency Dept Officer,Priority Queue,Log adds with priority level; process highest first. View in priority order.,"Array-based with heap (or simple sorted array for small size). Higher priority = smaller number (e.g., 1=critical). Struct for Emergency {string name, type; int priority;}."
-4: Ambulance Dispatcher,Circular Queue,Register adds to queue; rotate shifts in cycle (fair rotation without data loss). Display shows current order.,Array-based circular queue (reuse slots for continuous duty). Struct for Ambulance {string id; bool onDuty;}.
+## Project layout
+
+```
+.
+├── main.cpp                 # Entry point (menu that dispatches to each role)
+├── PatientAdmission.hpp     # Role 1 header
+├── PatientAdmission.cpp     # Role 1 implementation (array queue, file persistence)
+├── MedicalSupply.hpp        # Role 2 header
+├── MedicalSupply.cpp        # Role 2 implementation (linked-list stack, file persistence)
+├── Emergency.hpp            # Role 3 header
+├── Emergency.cpp            # Role 3 implementation (priority queue-like behavior, file persistence)
+├── Ambulance.hpp            # Role 4 header
+├── Ambulance.cpp            # Role 4 implementation (circular linked list, file persistence)
+└── data/                    # Persistent CSV/text files used by the modules
+        ├── patients.txt         # PatientAdmission persistence (CSV: ID,Name,Condition)
+        ├── medical_supplies.txt # MedicalSupply persistence (CSV: ID,Name,Quantity,Batch,Expiry,Notes)
+        ├── emergency.txt        # EmergencyDepartment persistence (CSV: ID,Name,Type,Priority)
+        └── ambulances.txt       # Ambulance persistence (CSV: ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty)
+```
+
+## Role summaries & behavior
+
+### Role 1 — Patient Admission
+- Data structure: fixed-size array queue (MAX_PATIENTS = 100)
+- Storage: saved to `data/patients.txt` as CSV lines `ID,Name,Condition`
+- Behavior:
+    - Loads existing patients on startup
+    - `admitPatient()` auto-assigns a unique ID, upper-cases name and condition, appends to in-memory queue, saves file
+    - `dischargePatient()` removes from head, saves file
+    - Prints a formatted admission ticket for each admitted patient
+
+Example `data/patients.txt` line:
+```
+3,HAO KANG,HAND PAIN
+```
+
+### Role 2 — Medical Supply Manager
+- Data structure: linked-list stack (LIFO)
+- Storage: `data/medical_supplies.txt` (CSV: `ID,Name,Quantity,Batch,Expiry,Notes`)
+- Behavior: push new supplies, pop/use last-added, view stack; validates input and persists changes.
+
+Example `data/medical_supplies.txt` lines:
+```
+ID,Name,Quantity,Batch,Expiry,Notes
+1,Surgical Mask,200,BATCH-001,2026-06-01,Standard masks
+```
+
+### Role 3 — Emergency Department
+- Data structure: sorted array acting like a priority queue (lower number = higher urgency)
+- Storage: `data/emergency.txt` (CSV: `ID,Name,Type,Priority`)
+- Behavior: loads previous emergency cases, imports new patients from `patients.txt` (avoids duplicates), allows logging new emergencies, processing top-priority case, searching and updating priorities.
+
+Example `data/emergency.txt` line:
+```
+5,JOHN DOE,Heart Attack,1
+```
+
+### Role 4 — Ambulance Dispatcher
+- Data structure: circular singly-linked list (rotation via tail pointer)
+- Storage: `data/ambulances.txt` (CSV: `ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty`)
+- Behavior: register ambulances, rotate duty roster (O(1)), assign shifts (minutes since midnight), save/load roster.
+
+Example `data/ambulances.txt` line (with header):
+```
+ID,Vehicle,Driver,Notes,ShiftStart,ShiftEnd,IsOnDuty
+1,ABC-123,Jane Smith,Spare unit,480,960,0
+```
+
+## Admission ticket format
+When a patient is admitted, the app prints a compact ticket similar to:
+
+```
+╔═════════════════════════════════════════╗
+║       HOSPITAL ADMISSION TICKET         ║
+╠═════════════════════════════════════════╣
+║ Patient ID: 3                           ║
+║ Name: HAO KANG                          ║
+║ Condition: HAND PAIN                    ║
+║ Time: Thu Nov  7 10:30:45 2025          ║
+╚═════════════════════════════════════════╝
+```
+
+## Notes, assumptions & known issues
+- Persistence format: CSV with simple commas. If your text fields contain commas, parsing may misbehave.
+- `PatientAdmission` uses `data/patients.txt` (not .csv) to match the implementation.
+- Emergency import: `EmergencyDepartment` will import patients from `data/patients.txt` if they are not already present in `data/emergency.txt`.
+- Build: the project is intentionally small and does not use external dependencies or build systems (e.g., CMake). You can wrap the g++ command above in a Makefile if desired.
+
+## Development & tests
+- To compile with warnings and debug info:
+```bash
+g++ -std=c++17 -Wall -Wextra -g main.cpp PatientAdmission.cpp Ambulance.cpp Emergency.cpp MedicalSupply.cpp -o main
+```
+
+- Run and exercise each menu. The code prints helpful messages while loading/saving data in `data/`.
+
+## Contributing
+- Feel free to open issues or PRs. Suggested improvements:
+    - Replace ad-hoc CSV parsing with a small library or robust parser
+    - Add automated unit tests and a small test dataset
+    - Provide a Makefile/CMake config and CI checks for build and warnings
+
+## License
+- Add your preferred license file (e.g., MIT) if you want to make this open-source publicly.
+
+----
+Updated README to match the project's current behavior and file names.
