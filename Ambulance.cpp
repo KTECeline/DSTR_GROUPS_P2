@@ -68,7 +68,7 @@ bool Ambulance::registerAmbulance() {
     // - Maintains circular structure: new node points to head, tail points to new node
     // - Auto-increments ID and auto-saves to file
 
-	cout << "Enter vehicle registration (no spaces): ";
+	cout << "Enter vehicle registration: ";
 	string reg; cin >> ws; getline(cin, reg);
 	cout << "Enter driver name: ";
 	string driver; getline(cin, driver);
